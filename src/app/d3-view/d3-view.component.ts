@@ -35,6 +35,8 @@ export class D3ViewComponent implements OnInit {
   private isError: boolean = false;
   private tooltip: d3.Selection<HTMLDivElement, {}, HTMLElement, undefined>;
   private focus: d3.Selection<SVGGElement, {}, HTMLElement, undefined>;
+  private padding = 50;
+  private outerPadding = 5;
 
   private STATION_MAP = [
     'JY01',
@@ -84,27 +86,28 @@ export class D3ViewComponent implements OnInit {
     let y = this.svgDiagram.append('g')
       .attr('class', 'axis axis-y');
 
-    const padding = 50;
     this.xScale = d3.scaleTime()
       .domain([new Date('2020/10/1 6:00:00'), new Date('2020/10/1 9:00:00')])
-      .range([padding, this.svgWidth-padding]);
+      .range([this.padding, this.svgWidth-this.padding]);
     this.yScaleDiagram = d3.scaleLinear()
       .domain([
         d3.max(this.dataset_time[0], (d)=>{return d.value;}),
         0
-      ]).range([this.svgHeight-padding, padding]);
+      ]).range([this.svgHeight-this.padding, this.padding]);
     
     let axisx = d3.axisTop(this.xScale)
       .ticks(d3.timeMinute.every(10))
-      .tickFormat(format);
+      .tickFormat(format)
+      .tickSizeInner(-(this.svgHeight - this.padding*2));
     let axisy = d3.axisLeft(this.yScaleDiagram)
       .tickFormat((d: number) => {
         return this.STATION_MAP[d];
-      });
+      })
+      .tickSizeOuter(-(this.svgWidth-this.padding*2));
 
-    x.attr('transform', 'translate(' + 0 + ',' + (padding) + ')')
+    x.attr('transform', 'translate(' + 0 + ',' + (this.padding) + ')')
       .call(axisx);
-    y.attr('transform', 'translate(' + padding + ',' + 0 + ')')
+    y.attr('transform', 'translate(' + this.padding + ',' + 0 + ')')
       .call(axisy);
     // 軸の描画ここまで
 
@@ -115,11 +118,12 @@ export class D3ViewComponent implements OnInit {
       .x((d)=>{return this.xScale(d.date);})
       .y((d)=>{return this.yScaleDiagram(d.value);});
     
+    // data()とdatum()の違いは返却時の要素データが1件毎か配列かの違い
     path.datum(this.dataset_time[0])
       .attr('fill', 'none')
       .attr('stroke', green)
       .attr('d', line1)
-      .attr('class', 'line1');
+      .attr('class', 'line1 J0101');
     
     // tooltip
     this.tooltip = d3.select('body').append('div').attr('class', 'chart-tooltip');
@@ -140,17 +144,17 @@ export class D3ViewComponent implements OnInit {
     overlay.style('fill', 'none')
       .style('pointer-events', 'all')
       .attr('class', 'overlay')
-      .attr('width', this.svgWidth - padding)
-      .attr('height', this.svgHeight - padding)
-      .attr('x', padding)
-      .attr('y', padding);
+      .attr('width', this.svgWidth - this.padding)
+      .attr('height', this.svgHeight - this.padding)
+      .attr('x', this.padding)
+      .attr('y', this.padding);
 
     focusLine.style('stroke', '#ccc')
       .style('stroke-width', '1px')
       .style('stroke-dasharray', '2')
       .attr('class', 'x-hover-line hover-line')
-      .attr('y1', padding)
-      .attr('y2', this.svgHeight-padding);
+      .attr('y1', this.padding)
+      .attr('y2', this.svgHeight-this.padding);
 
     overlay.on('mousemove', this.hoverMousetoDiagram.bind(this))
         .on('mouseout', this.hoverOutMousetoDiagram.bind(this));
@@ -172,9 +176,8 @@ export class D3ViewComponent implements OnInit {
     this.dataset_bar[0].start = d3.min(this.dataset_time[0], (d) => {return d.date});
     this.dataset_bar[0].end = d3.max(this.dataset_time[0], (d) => {return d.date});
 
-    const padding = 50;
     this.yScaleBar = d3.scaleBand()
-      .range([this.svgHeight-padding, padding])
+      .range([this.svgHeight-this.padding, this.padding])
       .domain(this.dataset_bar.map((d) => {return d.name}));
 
     let x = this.svgBar.append('g')
@@ -185,12 +188,13 @@ export class D3ViewComponent implements OnInit {
    
     let axisx = d3.axisTop(this.xScale)
       .ticks(d3.timeMinute.every(10))
-      .tickFormat(this.format);
+      .tickFormat(this.format)
+      .tickSizeInner(-(this.svgHeight - this.padding*2));
     let axisy = d3.axisLeft(this.yScaleBar);
 
-    x.attr('transform', 'translate(' + 0 + ',' + (padding) + ')')
+    x.attr('transform', 'translate(' + 0 + ',' + (this.padding) + ')')
       .call(axisx);
-    y.attr('transform', 'translate(' + padding + ',' + 0 + ')')
+    y.attr('transform', 'translate(' + this.padding + ',' + 0 + ')')
       .call(axisy);
     // 軸の描画ここまで
 
@@ -204,12 +208,11 @@ export class D3ViewComponent implements OnInit {
       .attr('width', (d) => {
         return this.xScale(d.end) - this.xScale(d.start)
       }).attr('y', (d) => {
-        return this.yScaleBar(d.name)+padding;
+        return this.yScaleBar(d.name)+this.padding;
       }).attr('x', (d) => {
         return this.xScale(d.start);
       }).attr('height', 2)
 
-    let range = 5;
     const overlay = this.svgBar.selectAll('.overlay')
       .data(this.dataset_bar).enter()
       .append('rect')
@@ -218,15 +221,16 @@ export class D3ViewComponent implements OnInit {
       .attr('class', (d) => {return d.name})
       .classed('overlay', true)
       .attr('width', (d) => {
-        return this.xScale(d.end) - this.xScale(d.start) + range * 2;
+        return this.xScale(d.end) - this.xScale(d.start) + this.outerPadding * 2;
       }).attr('y', (d) => {
-        return this.yScaleBar(d.name) + padding - range;
+        return this.yScaleBar(d.name) + this.padding - this.outerPadding;
       }).attr('x', (d) => {
-        return this.xScale(d.start) - range;
-      }).attr('height', 2 + range * 2)
+        return this.xScale(d.start) - this.outerPadding;
+      }).attr('height', 2 + this.outerPadding * 2)
       .on('mousemove', this.hoverMousetoBar.bind(this))
       .on('mouseout', this.hoverOutMousetoBar.bind(this))
-      .call(d3.drag().on('drag', this.dragged.bind(this)));
+      .call(d3.drag().on('drag', this.dragged.bind(this))
+        .on('end', this.dragend.bind(this)));
     
   }
 
@@ -259,7 +263,7 @@ export class D3ViewComponent implements OnInit {
       .style('top', tooltipY + 'px')
       .style('left', tooltipX + 'px');
     this.tooltip.append('div')
-      .attr('class', 'tooltip-time')
+      .attr('class', 'tooltip-dirgram')
       .html(d.date.toString() + '<br>' + this.STATION_MAP[d.value]);
     
     this.focus.style('visibility', 'visible')
@@ -267,11 +271,76 @@ export class D3ViewComponent implements OnInit {
     this.focus.select('circle').attr('transform', 'translate(' + 0 + ',' + this.yScaleDiagram(d.value) + ')');
   }
 
-  private dragged(d: d3.D3DragEvent<SVGRectElement, IBar[], IBar>, target) {
-    const newDate = this.xScale.invert(d.x);
-    d.subject.start = this.xScale.invert(this.xScale(d.subject.start) + d.dx);
-    this.svgBar.selectAll('.' + d.subject.name)
-      .raise();
+  private dragged(d: d3.D3DragEvent<SVGRectElement, IBar[], IBar>, target: IBar) {
+    let bar: IBar;
+    this.dataset_bar = this.dataset_bar.map((data) => {
+      if(data.name === target.name) {
+        data.start = this.xScale.invert(this.xScale(target.start) + d.dx);
+        data.end = this.xScale.invert(this.xScale(target.end) + d.dx);
+        bar = data;
+      }
+      return data;
+    });
+    this.svgBar.select('.bar.' + target.name)
+      .attr('x', this.xScale(bar.start));
+
+    this.svgBar.select('.overlay.' + target.name)
+      .attr('x', this.xScale(bar.start) - this.outerPadding);
+    
+    this.tooltip
+      .html(target.name + '<br>start: ' + bar.start.toString());
+    
+    const path = this.svgDiagram.select('path.' + target.name);
+    if(path) {
+      this.dataset_time[0] = this.dataset_time[0].map((data) => {
+        data.date = this.xScale.invert(this.xScale(data.date) + d.dx);
+        return data;
+      });
+      let line = d3.line<IData>()
+        .x((d)=>{return this.xScale(d.date);})
+        .y((d)=>{return this.yScaleDiagram(d.value);});
+    
+      path.datum(this.dataset_time[0])
+        .attr('d', line);
+    }
+  }
+
+  private dragend(d: d3.D3DragEvent<SVGRectElement, IBar[], IBar>, target: IBar) {
+    let bar: IBar;
+    this.dataset_bar = this.dataset_bar.map((data) => {
+      if(data.name === target.name) {
+        data.start = this.xScale.invert(this.xScale(target.start) + d.dx);
+        data.start.setSeconds(0);
+        data.end = this.xScale.invert(this.xScale(target.end) + d.dx);
+        data.end.setSeconds(0);
+        bar = data;
+      }
+      return data;
+    });
+    this.svgBar.select('.bar.' + target.name)
+      .attr('x', this.xScale(bar.start));
+
+    this.svgBar.select('.overlay.' + target.name)
+      .attr('x', this.xScale(bar.start) - this.outerPadding);
+    
+    this.tooltip
+      .html(target.name + '<br>start: ' + bar.start.toString());
+
+    const path = this.svgDiagram.select('path.' + target.name);
+    if(path) {
+      this.dataset_time[0] = this.dataset_time[0].map((data) => {
+        data.date = this.xScale.invert(this.xScale(data.date) + d.dx);
+        data.date.setSeconds(0);
+        return data;
+      });
+      let line = d3.line<IData>()
+        .x((d)=>{return this.xScale(d.date);})
+        .y((d)=>{return this.yScaleDiagram(d.value);});
+    
+      path.datum(this.dataset_time[0])
+        .attr('d', line);
+    }
+
   }
 
   private hoverOutMousetoDiagram (event) {
@@ -295,7 +364,7 @@ export class D3ViewComponent implements OnInit {
       .style('top', tooltipY + 'px')
       .style('left', tooltipX + 'px');
     this.tooltip.append('div')
-      .attr('class', 'tooltip-time')
+      .attr('class', 'tooltip-bar')
       .html(target.name + '<br>start: ' + target.start.toString());
     this.svgBar.select('rect.' + target.name)
       .classed('focus', true); 
@@ -322,7 +391,7 @@ export class D3ViewComponent implements OnInit {
       if(a.date > b.date) return 1;
       return 0;
     });
-    const color = '#0000CB';
+    const color = 'lightskyblue';
     let path = this.svgDiagram.append('path');
     let line1 = d3.line<IData>()
       .x((d)=>{return this.xScale(d.date)})
@@ -335,37 +404,26 @@ export class D3ViewComponent implements OnInit {
   }
 
   private clickButton2() {
-    let dataset1 = [
-      { date: '2020/10/1 7:12:00', value: Math.random()*10 },
-      { date: '2020/10/1 7:12:00', value: Math.random()*10 },
-      { date: '2020/10/1 7:12:00', value: Math.random()*10 },
-      { date: '2020/10/1 7:12:00', value: Math.random()*10 },
-    ];
     let x = this.svgDiagram.select('.axis-x');
-    // let y = this.svg.select('.axis-y');
-    const padding = 50;
     const xScale = this.xScale = d3.scaleTime()
       .domain([
         d3.min(this.dataset_time[0], (d)=>{return d.date;}),
         d3.max(this.dataset_time[0], (d)=>{return d.date;})
-      ]).range([padding, this.svgWidth-padding]);
-    // const yScale = this.yScale = d3.scaleLinear()
-    //   .domain([
-    //     0,
-    //     d3.max(this.dataset_time, (d)=>{return d.value;})
-    //   ]).range([this.svgHeight-padding, padding]);
+      ]).range([this.padding, this.svgWidth-this.padding]);
     
     let axisx = d3.axisTop(xScale)
-      .ticks(10)
+      .ticks(d3.timeMinute.every(10))
       .tickFormat(this.format);
-    // let axisy = d3.axisLeft(yScale);
 
-    // x.attr('transform', 'translate(' + 0 + ',' + (this.svgHeight-padding) + ')')
-    x.attr('transform', 'translate(' + 0 + ',' + (padding) + ')')
+    x.attr('transform', 'translate(' + 0 + ',' + (this.padding) + ')')
       .call(axisx);
-    // y.attr('transform', 'translate(' + padding + ',' + 0 + ')')
-    //   .call(axisy);
     // 軸の描画ここまで
+    
+    let line1 = d3.line<IData>()
+      .x((d)=>{return this.xScale(d.date);})
+      .y((d)=>{return this.yScaleDiagram(d.value);});
+    
+    let path = this.svgDiagram.selectAll('.path');
   }
   private clickButton3() {
     let dataset1 = [
@@ -376,23 +434,41 @@ export class D3ViewComponent implements OnInit {
     ];
 
     this.dataset_time[0] = dataset1.map((d) => {return {date: this.timeparser(d.date), value: d.value }});
-    this.dataset_time[0].sort((a, b) => {
-      if(a.date < b.date) return -1;
-      if(a.date > b.date) return 1;
-      return 0;
-    });
+    
     const color = '#00CB00';
     let path = this.svgDiagram.select('.line1');
     let line1 = d3.line<IData>()
       .x((d)=>{return this.xScale(d.date);})
       .y((d)=>{return this.yScaleDiagram(d.value);});
     
-    path.remove().enter();
-    this.svgDiagram.append('path').datum(this.dataset_time[0])
-      .attr('fill', 'none')
-      .attr('stroke', color)
-      .attr('d', line1)
-      .attr('class', 'line1');
+    path.datum(this.dataset_time[0])
+      .attr('d', line1);
+      
+    this.dataset_bar[0].start = d3.min(this.dataset_time[0], (d) => {return d.date});
+    this.dataset_bar[0].end = d3.max(this.dataset_time[0], (d) => {return d.date});
+    
+    const bar = this.svgBar.selectAll('.bar')
+      .data(this.dataset_bar);
+    
+    // margeは登録済みの全データの要素を選択する
+    bar.merge(bar).attr('width', (d) => {
+        return this.xScale(d.end) - this.xScale(d.start)
+      }).attr('y', (d) => {
+        return this.yScaleBar(d.name) + this.padding;
+      }).attr('x', (d) => {
+        return this.xScale(d.start);
+      });
+
+    const overlay = this.svgBar.selectAll('.overlay')
+      .data(this.dataset_bar);
+    overlay.merge(overlay)
+      .attr('width', (d) => {
+        return this.xScale(d.end) - this.xScale(d.start) + this.outerPadding * 2;
+      }).attr('y', (d) => {
+        return this.yScaleBar(d.name) + this.padding - this.outerPadding;
+      }).attr('x', (d) => {
+        return this.xScale(d.start) - this.outerPadding;
+      }).attr('height', 2 + this.outerPadding * 2);
   }
   private clickButton4() {
     if (this.isError) {

@@ -18,3 +18,10 @@
 .bar {
     fill: #00CB00;
 }
+g {
+    stroke: rgba(245, 245, 245, .9);
+    color: rgba(245, 245, 245, .9);
+}
+body {
+    background: rgb(31, 31, 31);
+}
