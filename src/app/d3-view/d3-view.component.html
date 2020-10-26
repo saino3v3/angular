@@ -1,4 +1,13 @@
-<svg id="svg-chart" [attr.width.px]="svgWidth" [attr.height.px]="svgHeight"></svg>
+<div><svg id="svg-chart" [attr.width.px]="svgWidth" [attr.height.px]="svgHeight">
+<!--    <g class="axis axis-x" transform="translate(0, {{::padding}})"></g>
+    <g class="axis axis-y" transform="translate(0, {{::padding}})"></g> -->
+</svg></div>
+<div><svg id="svg-bar" [attr.width.px]="svgWidth" [attr.height.px]="svgHeight">
+<!--    <g class="axis axis-x" transform="translate(0, {{::padding}})"></g>
+    <g class="axis axis-y" transform="translate(0, {{::padding}})"></g> -->
+</svg></div>
 <button (click)="clickButton1()">add Data</button>
 <button (click)="clickButton2()">change X</button>
 <button (click)="clickButton3()">change Data</button>
+<button (click)="clickButton4()">error appear</button>
+<br>{{isError}}
